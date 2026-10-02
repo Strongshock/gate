@@ -60,3 +60,25 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Show site URL
         run: 'echo "site: https://jerylihub.github.io/gate/ (deploy outcome: ${{ steps.deployment.outcome }})"'
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname !== '/check') return new Response("404");
+    const target = url.searchParams.get("sstp");
+    if (!target) return Response.json({ok:false,msg:"missing sstp"});
+    const controller = new AbortController();
+    const timer = setTimeout(()=>controller.abort(),90000);
+    try{
+      const res = await fetch(`https://${target}`,{
+        method:"GET",
+        signal:controller.signal,
+        headers:{"User-Agent":"Mozilla/5.0"}
+      });
+      clearTimeout(timer);
+      return Response.json({ok:res.ok,status:res.status});
+    }catch(e){
+      clearTimeout(timer);
+      return Response.json({ok:false,err:e.message});
+    }
+  }
+};
